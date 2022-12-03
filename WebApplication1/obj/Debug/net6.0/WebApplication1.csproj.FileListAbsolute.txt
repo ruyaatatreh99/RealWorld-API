@@ -83,3 +83,7 @@ C:\Users\Ru'ya\source\repos\WebApplication1\WebApplication1\obj\Debug\net6.0\ref
 C:\Users\Ru'ya\source\repos\WebApplication1\WebApplication1\obj\Debug\net6.0\WebApplication1.pdb
 C:\Users\Ru'ya\source\repos\WebApplication1\WebApplication1\obj\Debug\net6.0\WebApplication1.genruntimeconfig.cache
 C:\Users\Ru'ya\source\repos\WebApplication1\WebApplication1\obj\Debug\net6.0\ref\WebApplication1.dll
+C:\Users\Ru'ya\source\repos\WebApplication1\WebApplication1\bin\Debug\net6.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\Ru'ya\source\repos\WebApplication1\WebApplication1\bin\Debug\net6.0\Scrutor.dll
+C:\Users\Ru'ya\source\repos\WebApplication1\WebApplication1\bin\Debug\net6.0\Swashbuckle.AspNetCore.Filters.dll
+C:\Users\Ru'ya\source\repos\WebApplication1\WebApplication1\bin\Debug\net6.0\Swashbuckle.AspNetCore.Filters.Abstractions.dll

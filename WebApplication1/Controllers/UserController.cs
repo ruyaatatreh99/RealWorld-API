@@ -1,4 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.Data;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using WebApplication1.Model;
 using WebApplication1.Repos;
 namespace WebApplication1.Controllers
@@ -14,16 +20,17 @@ namespace WebApplication1.Controllers
             _inner = inner;
        
         }
+
         //get profile user
         [Route("/profiles/celeb_{username}")]
         [HttpGet]
-        public IActionResult Get([FromHeader] string user_id, string username)
+        [Authorize(Roles = "User")]
+        public IActionResult Get([FromHeader] int user_id, string username)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
                 var user = _inner.GetProfileByName(username);
-                bool status = _inner.followingStatus(userid, username);
+                bool status = _inner.followingStatus(user_id, username);
                 if (user == null) return NotFound();
                 else {
                     return Ok(new { username = "celeb_" +user.username, bio = user.bio, image = user.image, following = status });
@@ -35,14 +42,13 @@ namespace WebApplication1.Controllers
         //get user by id
         [Route("/users/{id}")]
         [HttpGet]
-        public IActionResult GetById([FromHeader] string user_id)
+        public IActionResult GetById([FromHeader] int user_id)
         {
             try {
-                int userid = Int16.Parse(user_id);
-                if (userid <= 0) return NotFound(new { status = "error", message = "missing authorization credentials" });
+                if (user_id <= 0) return NotFound(new { status = "error", message = "missing authorization credentials" });
                 else
                 {
-                    var user = _inner.GetUserByid(userid);
+                    var user = _inner.GetUserByid(user_id);
 
                     if (user == null) return NotFound();
                     return Ok(user);
@@ -70,12 +76,12 @@ namespace WebApplication1.Controllers
         //update user
         [HttpPut]
         [Route("/user")]
-        public IActionResult Put([FromHeader] string user_id,[FromBody] user u)
+        [Authorize(Roles = "User")]
+        public IActionResult Put([FromHeader] int user_id,[FromBody] user u)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
                     user user = _inner.Update(u);
                     return Ok(user);
@@ -101,7 +107,7 @@ namespace WebApplication1.Controllers
         }
 
         //Login User
-        [HttpGet]
+        [HttpPost]
         [Route("/user/login")]
         public IActionResult GetLoginUser([FromBody] Dictionary<string, string> data)
         {
@@ -109,7 +115,26 @@ namespace WebApplication1.Controllers
             {
                 var users = _inner.GetLoginUser(data["email"], data["password"]);
                 if (users == null) return BadRequest("email or password invaild");
-                return Ok(users);
+                else
+                {
+                    List<Claim> claims = new List<Claim>
+                {
+                     new Claim("type",data["email"]),
+                     new Claim(ClaimTypes.Role,"User"),
+                };
+                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("SXkSqsKyNUyvGbnHs7ke2NCq8zQzNLW7mPmHbnZZ"));
+
+                    var Token = new JwtSecurityToken(
+            "https://fbi-demo.com",
+            "https://fbi-demo.com",
+           claims,
+            expires: DateTime.Now.AddDays(90),
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+        );
+
+                    var jwt = new JwtSecurityTokenHandler().WriteToken(Token);
+                    return Ok(new { User = users, Token = jwt });
+                }
             }
             catch (Exception) { return new JsonResult(new { status = 500, message = "Error" }); }
 
@@ -118,14 +143,14 @@ namespace WebApplication1.Controllers
         //Delete user
         [HttpDelete]
         [Route("/user/{id}")]
-        public IActionResult DeleteById([FromHeader] string user_id)
+        [Authorize(Roles = "User")]
+        public IActionResult DeleteById([FromHeader] int user_id)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
-                    _inner.DeleteById(userid);
+                    _inner.DeleteById(user_id);
                     return Ok("Deleted successfuly");
                 }
                 else return NotFound(new { status = "error", message = "missing authorization credentials" });
@@ -137,12 +162,12 @@ namespace WebApplication1.Controllers
         //Follow user
         [HttpPost]
         [Route("/profiles/celeb_{username}/follow")]
-        public IActionResult follow([FromHeader] string user_id,string username, [FromBody] string email)
+        [Authorize(Roles = "User")]
+        public IActionResult follow([FromHeader] int user_id,string username, [FromBody] string email)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
                     user profile = _inner.follow(username, email);
                     return Ok(new { username = "celeb_" + profile.username, bio = profile.bio, image = profile.image, following = true });
@@ -152,18 +177,18 @@ namespace WebApplication1.Controllers
             catch (Exception) { return new JsonResult(new { status = 500, message = "Error" }); }
 
         }
+       
         //unFollow user
         [HttpDelete]
         [Route("/profiles/celeb_{username}/follow")]
-        public IActionResult unfollow([FromHeader] string user_id,string username)
+        [Authorize(Roles = "User")]
+        public IActionResult unfollow([FromHeader] int user_id,string username)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                
-                if (userid > 0)
+                if (user_id > 0)
                 {
-                    var user = _inner.GetUserByid(userid);
+                    var user = _inner.GetUserByid(user_id);
                     user profile = _inner.unfollow(username, user.email);
                     if (profile != null)
                     return Ok(new { username = "celeb_" + profile.username, bio = profile.bio, image = profile.image, following = false });

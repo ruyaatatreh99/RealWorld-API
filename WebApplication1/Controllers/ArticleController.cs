@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Data;
 using System.Drawing;
 using WebApplication1.Model;
 using WebApplication1.Repos;
@@ -24,15 +26,15 @@ namespace WebApplication1.Controllers
 
         [Route("/articles/{slug}/favorite")]
         [HttpPost]
-        public IActionResult favorite([FromHeader] string user_id, string slug)
+        [Authorize(Roles = "User")]
+        public IActionResult favorite([FromHeader] int user_id, string slug)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
-                    user user = _user.GetUserByid(userid);
-                    var a = _inner.Favorite(slug, userid);
+                    user user = _user.GetUserByid(user_id);
+                    var a = _inner.Favorite(slug, user_id);
                     if (a != null) return Ok(new { articles = a, favoritedBy = user, articlesCount = 1 });
                     else return Ok(new { articles = "", favoritedBy = "", articlesCount = 0 });
                 }
@@ -47,14 +49,14 @@ namespace WebApplication1.Controllers
         //favorite by username
         [Route("/articles/{favorited}")]
         [HttpGet]
-        public IActionResult favoriteByname([FromHeader] string user_id, string favorited, int articleid)
+        [Authorize(Roles = "User")]
+        public IActionResult favoriteByname([FromHeader] int user_id, string favorited, int articleid)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
-                    var a = _inner.favoriteByname(favorited, userid, articleid);
+                    var a = _inner.favoriteByname(favorited, user_id, articleid);
                     if (a != null) return Ok(new { articles = a, articlesCount = 1 });
                     else return Ok(new { article = "", articlesCount = 0 });
                 }
@@ -66,14 +68,14 @@ namespace WebApplication1.Controllers
 
         [Route("/articles/{slug}/favorite")]
         [HttpDelete]
-        public IActionResult Unfavorite([FromHeader] string user_id, string slug)
+        [Authorize(Roles = "User")]
+        public IActionResult Unfavorite([FromHeader] int user_id, string slug)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
-                    var a = _inner.Unfavorite(slug, userid);
+                    var a = _inner.Unfavorite(slug, user_id);
                     if (a != null) return Ok(new { articles = a, favoritedBy = "", articlesCount = 1 });
                     else return Ok(new { article = "", favoritedBy = "", articlesCount = 0 });
                 }
@@ -85,6 +87,7 @@ namespace WebApplication1.Controllers
 
         [Route("/tags")]
         [HttpGet]
+        [Authorize(Roles = "User")]
         public IActionResult GetTagList()
         {
             try
@@ -98,12 +101,12 @@ namespace WebApplication1.Controllers
 
         [Route("/articles/{slug}/comments")]
         [HttpGet]
-        public IActionResult GetCommentList([FromHeader] string user_id, string slug)
+        [Authorize(Roles = "User")]
+        public IActionResult GetCommentList([FromHeader] int user_id, string slug)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
                     var a = _inner.GetCommentList(slug);
                     return Ok(a);
@@ -116,6 +119,7 @@ namespace WebApplication1.Controllers
 
         [Route("/article")]
         [HttpGet]
+        [Authorize(Roles = "User")]
         public IActionResult Get()
         {
             try
@@ -130,14 +134,14 @@ namespace WebApplication1.Controllers
         //create comment
         [Route("/articles/{slug}/comments")]
         [HttpPost]
-        public IActionResult Addcomment([FromHeader] string user_id, [FromBody] Dictionary<string, string> data, string slug)
+        [Authorize(Roles = "User")]
+        public IActionResult Addcomment([FromHeader] int user_id, [FromBody] Dictionary<string, string> data, string slug)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
-                    var comment = _inner.Addcomment(data["body"], userid, slug);
+                    var comment = _inner.Addcomment(data["body"], user_id, slug);
                     if (comment != null) return Ok(comment);
                     else return NotFound(new { });
 
@@ -150,14 +154,14 @@ namespace WebApplication1.Controllers
         //delete comment
         [Route("/articles/{slug}/comments/{commentId}")]
         [HttpDelete]
-        public IActionResult Deletecomment([FromHeader] string user_id, int commentId, string slug)
+        [Authorize(Roles = "User")]
+        public IActionResult Deletecomment([FromHeader]int user_id, int commentId, string slug)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
-                    _inner.Deletecomment(commentId, userid, slug);
+                    _inner.Deletecomment(commentId, user_id, slug);
                     return Ok(new { });
 
 
@@ -170,14 +174,14 @@ namespace WebApplication1.Controllers
         //Add Article
         [Route("/article")]
         [HttpPost]
-        public IActionResult Add([FromHeader] string user_id, [FromBody] Dictionary<string, string> data)
+        [Authorize(Roles = "User")]
+        public IActionResult Add([FromHeader] int user_id, [FromBody] Dictionary<string, string> data)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
-                    var article = _inner.Add(data["title"], data["description"], data["body"], data["tag"], userid);
+                    var article = _inner.Add(data["title"], data["description"], data["body"], data["tag"], user_id);
                     return Ok(article);
                 }
                 else return NotFound(new { status = "error", message = "missing authorization credentials" });
@@ -187,12 +191,12 @@ namespace WebApplication1.Controllers
 
         [Route("/article")]
         [HttpPut]
-        public IActionResult update([FromHeader] string user_id, [FromBody] article article)
+        [Authorize(Roles = "User")]
+        public IActionResult update([FromHeader] int user_id, [FromBody] article article)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
                     var a = _inner.Update(article);
                     return Ok(a);
@@ -204,12 +208,12 @@ namespace WebApplication1.Controllers
 
         [Route("/article/{slug}")]
         [HttpDelete]
-        public IActionResult Delete([FromHeader] string user_id, string slug)
+        [Authorize(Roles = "User")]
+        public IActionResult Delete([FromHeader] int user_id, string slug)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
                     _inner.Delete(slug);
                     return Ok(new { });
@@ -221,12 +225,11 @@ namespace WebApplication1.Controllers
 
         [Route("/articles")]
         [HttpGet]
-        public IActionResult GetSlugArticle([FromHeader] string user_id, string slug)
+        public IActionResult GetSlugArticle([FromHeader] int user_id, string slug)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
                     var articel = _inner.GetArticleList();
                     var Myarticle = articel.Where(a => a.slug == slug);
@@ -241,12 +244,11 @@ namespace WebApplication1.Controllers
 
         [Route("/article/Author")]
         [HttpGet]
-        public IActionResult GetArticle([FromHeader] string user_id, string username)
+        public IActionResult GetArticle([FromHeader] int user_id, string username)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
                     user user = _user.GetProfileByName(username);
                     if (user != null)
@@ -268,12 +270,11 @@ namespace WebApplication1.Controllers
 
         [Route("/article/{tag}")]
         [HttpGet]
-        public IActionResult GetByFilter([FromHeader] string user_id, string tag)
+        public IActionResult GetByFilter([FromHeader] int user_id, string tag)
         {
             try
             {
-                int userid = Int16.Parse(user_id);
-                if (userid > 0)
+                if (user_id > 0)
                 {
                     var articel = _inner.GetArticleList();
                     var Myarticle = articel.Where(a => a.tag == tag);
@@ -285,8 +286,6 @@ namespace WebApplication1.Controllers
             }
             catch (Exception) { return new JsonResult(new { status = 500, message = "Error" }); }
         }
-
-
 
     }
 }
